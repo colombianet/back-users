@@ -1,6 +1,5 @@
 package com.inmohouse.backend.backend.controllers;
 
-import org.springframework.web.bind.annotation.RestController;
 import com.inmohouse.backend.backend.entities.User;
 import com.inmohouse.backend.backend.services.UserService;
 
@@ -27,7 +26,7 @@ public class UserController {
         return this.service.findAll();
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or (#id == principal.id and hasAuthority('ROLE_AGENTE'))")
     @GetMapping("/{id}")
     public ResponseEntity<?> show(@PathVariable Long id) {
         Optional<User> userOptional = this.service.findbyId(id);
