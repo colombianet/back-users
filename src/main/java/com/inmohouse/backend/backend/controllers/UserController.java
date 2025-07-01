@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,6 +20,9 @@ public class UserController {
 
     @Autowired
     private UserService service;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping
@@ -43,7 +47,7 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(this.service.save(user));
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or (#id == principal.id and hasAuthority('ROLE_AGENTE'))")
     @PutMapping("/{id}")
     public ResponseEntity<User> update(@PathVariable Long id, @RequestBody User user) {
         Optional<User> userOptional = this.service.findbyId(id);
@@ -51,7 +55,11 @@ public class UserController {
             User userBD = userOptional.get();
             userBD.setEmail(user.getEmail());
             userBD.setNombre(user.getNombre());
-            userBD.setPassword(user.getPassword());
+
+            if (user.getPassword() != null && !user.getPassword().isBlank()) {
+                userBD.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
+
             return ResponseEntity.ok(this.service.save(userBD));
         }
         return ResponseEntity.notFound().build();
