@@ -31,7 +31,7 @@ public class User {
     private String password;
 
     @JsonIgnoreProperties({"handler", "hibernateLazyInitializer"})
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "usuarios_roles",
         joinColumns = {@JoinColumn(name="usuario_id")},

@@ -6,6 +6,6 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.inmohouse.backend.backend.entities.User;
 
-public interface UserRepository extends CrudRepository<User, Long>{
-    Optional<User> findByUser(String nombre);
+public interface UserRepository extends CrudRepository<User, Long> {
+    Optional<User> findByEmail(String email);
 }
