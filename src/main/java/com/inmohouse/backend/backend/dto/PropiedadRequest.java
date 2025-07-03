@@ -9,13 +9,14 @@ public class PropiedadRequest {
     private BigDecimal precio;
     private String ubicacion;
     private String estado;
-    private Long agenteId;
-    private Long clienteId;
 
-    public PropiedadRequest() {}
+    private Long agenteId;
+
+    public PropiedadRequest() {
+    }
 
     public PropiedadRequest(String titulo, String descripcion, String tipo, BigDecimal precio,
-                            String ubicacion, String estado, Long agenteId, Long clienteId) {
+            String ubicacion, String estado, Long agenteId) {
         this.titulo = titulo;
         this.descripcion = descripcion;
         this.tipo = tipo;
@@ -23,30 +24,61 @@ public class PropiedadRequest {
         this.ubicacion = ubicacion;
         this.estado = estado;
         this.agenteId = agenteId;
-        this.clienteId = clienteId;
     }
 
-    public String getTitulo() { return titulo; }
-    public void setTitulo(String titulo) { this.titulo = titulo; }
+    public String getTitulo() {
+        return titulo;
+    }
 
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
 
-    public String getTipo() { return tipo; }
-    public void setTipo(String tipo) { this.tipo = tipo; }
+    public String getDescripcion() {
+        return descripcion;
+    }
 
-    public BigDecimal getPrecio() { return precio; }
-    public void setPrecio(BigDecimal precio) { this.precio = precio; }
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
 
-    public String getUbicacion() { return ubicacion; }
-    public void setUbicacion(String ubicacion) { this.ubicacion = ubicacion; }
+    public String getTipo() {
+        return tipo;
+    }
 
-    public String getEstado() { return estado; }
-    public void setEstado(String estado) { this.estado = estado; }
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
 
-    public Long getAgenteId() { return agenteId; }
-    public void setAgenteId(Long agenteId) { this.agenteId = agenteId; }
+    public BigDecimal getPrecio() {
+        return precio;
+    }
 
-    public Long getClienteId() { return clienteId; }
-    public void setClienteId(Long clienteId) { this.clienteId = clienteId; }
+    public void setPrecio(BigDecimal precio) {
+        this.precio = precio;
+    }
+
+    public String getUbicacion() {
+        return ubicacion;
+    }
+
+    public void setUbicacion(String ubicacion) {
+        this.ubicacion = ubicacion;
+    }
+
+    public String getEstado() {
+        return estado;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public Long getAgenteId() {
+        return agenteId;
+    }
+
+    public void setAgenteId(Long agenteId) {
+        this.agenteId = agenteId;
+    }
 }

@@ -15,7 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/users")
+@RequestMapping("/api/users")
 public class UserController {
 
     @Autowired
@@ -24,33 +24,38 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    // 📋 Solo admin puede listar todos los usuarios
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<User> list() {
-        return this.service.findAll();
+        return service.findAll();
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN') or (#id == principal.id and hasAuthority('ROLE_AGENTE'))")
+    // 🔎 Admin puede ver cualquier usuario, AGENTE su propio perfil
+    @PreAuthorize("hasRole('ADMIN') or (#id == principal.id and hasRole('AGENTE'))")
     @GetMapping("/{id}")
     public ResponseEntity<?> show(@PathVariable Long id) {
-        Optional<User> userOptional = this.service.findbyId(id);
+        Optional<User> userOptional = service.findbyId(id);
         if (userOptional.isPresent()) {
-            return ResponseEntity.status(HttpStatus.OK).body(userOptional.get());
+            return ResponseEntity.ok(userOptional.get());
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Collections.singletonMap("error", "Usuario no encontrado con id: " + id));
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    // ➕ Solo admin puede crear usuarios
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<User> create(@RequestBody User user) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(this.service.save(user));
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.save(user));
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN') or (#id == principal.id and hasAuthority('ROLE_AGENTE'))")
+    // 🖊️ Admin edita cualquiera, AGENTE solo su perfil
+    @PreAuthorize("hasRole('ADMIN') or (#id == principal.id and hasRole('AGENTE'))")
     @PutMapping("/{id}")
-    public ResponseEntity<User> update(@PathVariable Long id, @RequestBody User user) {
-        Optional<User> userOptional = this.service.findbyId(id);
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody User user) {
+        Optional<User> userOptional = service.findbyId(id);
         if (userOptional.isPresent()) {
             User userBD = userOptional.get();
             userBD.setEmail(user.getEmail());
@@ -60,19 +65,24 @@ public class UserController {
                 userBD.setPassword(passwordEncoder.encode(user.getPassword()));
             }
 
-            return ResponseEntity.ok(this.service.save(userBD));
+            return ResponseEntity.ok(service.save(userBD));
         }
-        return ResponseEntity.notFound().build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Collections.singletonMap("error", "No se pudo actualizar, usuario no encontrado con id: " + id));
     }
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    // Solo admin puede eliminar usuarios
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        Optional<User> userOptional = this.service.findbyId(id);
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        Optional<User> userOptional = service.findbyId(id);
         if (userOptional.isPresent()) {
-            this.service.deletebyId(id);
+            service.deletebyId(id);
             return ResponseEntity.noContent().build();
         }
-        return ResponseEntity.notFound().build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Collections.singletonMap("error", "No se pudo eliminar, usuario no encontrado con id: " + id));
     }
 }

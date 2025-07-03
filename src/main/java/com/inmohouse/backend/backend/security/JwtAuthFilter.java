@@ -30,8 +30,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain)
             throws ServletException, IOException {
-                System.out.println("🌀 JwtAuthFilter ejecutado para: " + request.getRequestURI());
-
 
         String authHeader = request.getHeader("Authorization");
 
@@ -40,14 +38,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (jwtUtil.isTokenValid(token)) {
                 String email = jwtUtil.extractUsername(token);
+
                 User user = userRepository.findByEmailWithRoles(email).orElse(null);
-                System.out.println("📦 Roles en User desde JPA → " + user.getRoles());
 
-
-                if (user != null) {
+                if (user == null) {
+                    System.out.println("❌ Usuario no encontrado en la base de datos para email: " + email);
+                } else {
                     CustomUserDetails userDetails = new CustomUserDetails(user);
-                    System.out.println("🚨 Authorities reconocidas: " + userDetails.getAuthorities());
-                System.out.println("🚨 Authorities reconocidas: " + userDetails.getAuthorities());
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             userDetails,
@@ -55,10 +52,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             userDetails.getAuthorities());
 
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    System.out.println("🎯 Autoridades en contexto → " +
-    SecurityContextHolder.getContext().getAuthentication().getAuthorities());
-
                 }
+            } else {
+                System.out.println("❌ Token inválido");
             }
         }
 

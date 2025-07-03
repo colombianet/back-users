@@ -1,17 +1,22 @@
 package com.inmohouse.backend.backend.entities;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.Column;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "roles")
 public class Role {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long Id;
+    private Long id;
+
+    @Column(unique = true, nullable = false)
+    private String nombre;
 
     public Role() {
     }
@@ -20,14 +25,12 @@ public class Role {
         this.nombre = nombre;
     }
 
-    private String nombre;
-
     public Long getId() {
-        return Id;
+        return id;
     }
 
     public void setId(Long id) {
-        Id = id;
+        this.id = id;
     }
 
     public String getNombre() {
@@ -37,6 +40,4 @@ public class Role {
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
-
-    
 }
