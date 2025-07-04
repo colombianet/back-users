@@ -13,6 +13,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/propiedades")
 public class PropiedadController {
@@ -23,19 +26,16 @@ public class PropiedadController {
     @Autowired
     private UserRepository userRepository;
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('AGENTE')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_AGENTE')")
     @PostMapping
     public ResponseEntity<Propiedad> create(@RequestBody PropiedadRequest request,
-            Authentication authentication) {
+                                            Authentication authentication) {
         User agente;
 
         if (authentication != null) {
-            // Extraer el agente desde el token
             CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
             agente = userRepository.findById(userDetails.getId()).orElse(null);
         } else {
-            // Fallback: usar agenteId solo si fue enviado (caso ADMIN creando en nombre de
-            // otro)
             agente = userRepository.findById(request.getAgenteId()).orElse(null);
         }
 
@@ -55,10 +55,37 @@ public class PropiedadController {
         return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(propiedad));
     }
 
-    // Todos los roles pueden ver propiedades
-    @PreAuthorize("hasAnyRole('ADMIN', 'AGENTE', 'CLIENTE')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_AGENTE', 'ROLE_CLIENTE')")
     @GetMapping
     public ResponseEntity<Iterable<Propiedad>> list() {
         return ResponseEntity.ok(repository.findAll());
+    }
+
+    // Estadísticas por tipo
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/estadisticas/tipo")
+    public ResponseEntity<List<Map<String, Object>>> estadisticasPorTipo() {
+        List<Object[]> resultados = repository.contarPorTipo();
+        List<Map<String, Object>> response = resultados.stream().map(row -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("tipo", row[0]);
+            item.put("cantidad", row[1]);
+            return item;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    // Estadísticas por agente
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/estadisticas/agente")
+    public ResponseEntity<List<Map<String, Object>>> estadisticasPorAgente() {
+        List<Object[]> resultados = repository.contarPorAgente();
+        List<Map<String, Object>> response = resultados.stream().map(row -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("agente", row[0]);
+            item.put("cantidad", row[1]);
+            return item;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(response);
     }
 }

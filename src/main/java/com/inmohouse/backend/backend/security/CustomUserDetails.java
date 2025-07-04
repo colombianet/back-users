@@ -30,15 +30,10 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Los roles en la BD ya tienen el prefijo "ROLE_", así que no lo añadimos
         return user.getRoles()
             .stream()
-            .map(role -> {
-                String nombre = role.getNombre();
-                if (!nombre.startsWith("ROLE_")) {
-                    nombre = "ROLE_" + nombre;
-                }
-                return new SimpleGrantedAuthority(nombre);
-            })
+            .map(role -> new SimpleGrantedAuthority(role.getNombre()))
             .collect(Collectors.toList());
     }
 
