@@ -1,6 +1,5 @@
 package com.inmohouse.backend.backend.security;
 
-import com.inmohouse.backend.backend.repositories.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +13,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import jakarta.servlet.Filter;
 
 import java.util.List;
@@ -23,11 +23,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
 
-    public SecurityConfig(JwtUtil jwtUtil, UserRepository userRepository) {
+    public SecurityConfig(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        this.userRepository = userRepository;
     }
 
     @Bean
@@ -42,14 +40,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/agente/**").hasRole("AGENTE")
                         .requestMatchers("/api/cliente/**").hasRole("CLIENTE")
                         .anyRequest().authenticated())
-
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
     @Bean
     public Filter jwtFilter() {
-        return new JwtAuthFilter(jwtUtil, userRepository);
+        return new JwtAuthFilter(jwtUtil);
     }
 
     @Bean

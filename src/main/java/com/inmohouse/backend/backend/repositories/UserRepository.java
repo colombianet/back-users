@@ -10,6 +10,7 @@ import com.inmohouse.backend.backend.entities.User;
 
 public interface UserRepository extends CrudRepository<User, Long> {
     Optional<User> findByEmail(String email);
+    
     @Query("SELECT u FROM User u JOIN FETCH u.roles WHERE u.email = :email")
     Optional<User> findByEmailWithRoles(@Param("email") String email);
 }

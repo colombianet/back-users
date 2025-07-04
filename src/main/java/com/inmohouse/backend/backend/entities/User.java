@@ -18,7 +18,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name= "usuarios")
+@Table(name = "usuarios")
 public class User {
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -27,17 +27,11 @@ public class User {
     private String nombre;
 
     private String email;
- 
+
     private String password;
 
-    @JsonIgnoreProperties({"handler", "hibernateLazyInitializer"})
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "usuarios_roles",
-        joinColumns = {@JoinColumn(name="usuario_id")},
-        inverseJoinColumns = @JoinColumn(name="rol_id"),
-        uniqueConstraints = { @UniqueConstraint(columnNames = {"usuario_id", "rol_id"})}
-    )
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "usuarios_roles", joinColumns = @JoinColumn(name = "usuario_id"), inverseJoinColumns = @JoinColumn(name = "rol_id"))
     private List<Role> roles;
 
     public User() {
@@ -47,7 +41,7 @@ public class User {
     public Long getId() {
         return id;
     }
-    
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -55,7 +49,7 @@ public class User {
     public String getNombre() {
         return nombre;
     }
-   
+
     public void setNombre(String nombre) {
         this.nombre = nombre;
     }
@@ -63,15 +57,15 @@ public class User {
     public String getEmail() {
         return email;
     }
-    
+
     public void setEmail(String email) {
         this.email = email;
     }
-    
+
     public String getPassword() {
         return password;
     }
-    
+
     public void setPassword(String password) {
         this.password = password;
     }
@@ -82,5 +76,5 @@ public class User {
 
     public void setRoles(List<Role> roles) {
         this.roles = roles;
-    }    
+    }
 }

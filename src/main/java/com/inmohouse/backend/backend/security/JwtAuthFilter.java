@@ -1,34 +1,33 @@
 package com.inmohouse.backend.backend.security;
 
-import com.inmohouse.backend.backend.repositories.UserRepository;
-import com.inmohouse.backend.backend.entities.User;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
 
-    public JwtAuthFilter(JwtUtil jwtUtil, UserRepository userRepository) {
+    public JwtAuthFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        this.userRepository = userRepository;
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain)
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
@@ -38,21 +37,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (jwtUtil.isTokenValid(token)) {
                 String email = jwtUtil.extractUsername(token);
+                List<String> roles = jwtUtil.extractRoles(token);
 
-                User user = userRepository.findByEmailWithRoles(email).orElse(null);
+                List<GrantedAuthority> authorities = roles.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
 
-                if (user == null) {
-                    System.out.println("❌ Usuario no encontrado en la base de datos para email: " + email);
-                } else {
-                    CustomUserDetails userDetails = new CustomUserDetails(user);
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        email, null, authorities);
 
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authToken);
 
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
+                System.out.println("✅ Usuario autenticado: " + email);
+                authorities.forEach(a -> System.out.println("Rol: " + a.getAuthority()));
             } else {
                 System.out.println("❌ Token inválido");
             }
