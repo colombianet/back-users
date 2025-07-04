@@ -1,27 +1,28 @@
 package com.inmohouse.backend.backend.security;
 
+import com.inmohouse.backend.backend.entities.User;
+import com.inmohouse.backend.backend.repositories.UserRepository;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
-    public JwtAuthFilter(JwtUtil jwtUtil) {
+    public JwtAuthFilter(JwtUtil jwtUtil, UserRepository userRepository) {
         this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -37,19 +38,25 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (jwtUtil.isTokenValid(token)) {
                 String email = jwtUtil.extractUsername(token);
-                List<String> roles = jwtUtil.extractRoles(token);
 
-                List<GrantedAuthority> authorities = roles.stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .collect(Collectors.toList());
+                // ✅ Cargar usuario con roles desde la base de datos
+                User user = userRepository.findByEmailWithRoles(email).orElse(null);
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        email, null, authorities);
+                if (user != null) {
+                    CustomUserDetails userDetails = new CustomUserDetails(user);
 
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities());
 
-                System.out.println("✅ Usuario autenticado: " + email);
-                authorities.forEach(a -> System.out.println("Rol: " + a.getAuthority()));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                    System.out.println("✅ Usuario autenticado: " + email);
+                    userDetails.getAuthorities().forEach(a -> System.out.println("Rol: " + a.getAuthority()));
+                } else {
+                    System.out.println("❌ Usuario no encontrado en la base de datos: " + email);
+                }
             } else {
                 System.out.println("❌ Token inválido");
             }

@@ -1,5 +1,6 @@
 package com.inmohouse.backend.backend.security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +15,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.inmohouse.backend.backend.repositories.UserRepository;
+
 import jakarta.servlet.Filter;
 
 import java.util.List;
@@ -22,6 +25,9 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    @Autowired
+    private UserRepository userRepository;
+    
     private final JwtUtil jwtUtil;
 
     public SecurityConfig(JwtUtil jwtUtil) {
@@ -46,7 +52,7 @@ public class SecurityConfig {
 
     @Bean
     public Filter jwtFilter() {
-        return new JwtAuthFilter(jwtUtil);
+        return new JwtAuthFilter(jwtUtil, userRepository);
     }
 
     @Bean
