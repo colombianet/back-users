@@ -7,4 +7,6 @@ import com.inmohouse.backend.backend.entities.Propiedad;
 
 public interface PropiedadRepository extends CrudRepository<Propiedad, Long> {
     List<Propiedad> findByAgenteId(Long agenteId);
+
+    List<Propiedad> findByEstado(String string);
 }
