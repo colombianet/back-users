@@ -42,4 +42,10 @@ public class UserServiceImpl implements UserService {
         this.repository.deleteById(id);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> findAllClientes() {
+        return repository.findAllClientes();
+    }
+
 }

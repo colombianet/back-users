@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +38,13 @@ public class UserController {
         return service.findAll();
     }
 
+    @PreAuthorize("hasRole('AGENTE')")
+    @GetMapping("/clientes")
+    public ResponseEntity<?> listarClientes() {
+        List<User> clientes = service.findAllClientes();
+        return ResponseEntity.ok(clientes);
+    }
+
     @PreAuthorize("hasRole('ADMIN') or (#id == principal.id and hasRole('AGENTE'))")
     @GetMapping("/{id}")
     public ResponseEntity<?> show(@PathVariable Long id) {
@@ -47,12 +56,16 @@ public class UserController {
                 .body(Collections.singletonMap("error", "Usuario no encontrado con id: " + id));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AGENTE')")
     @PostMapping
     public ResponseEntity<?> create(@RequestBody User user) {
+        if (hasRole("AGENTE") && !esCliente(user)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Collections.singletonMap("error", "Solo se pueden crear usuarios con rol CLIENTE"));
+        }
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // Validar y reemplazar roles por entidades persistidas
         List<Role> rolesEntrantes = user.getRoles();
         List<Role> rolesPersistidos = rolesEntrantes.stream()
                 .map(r -> {
@@ -71,12 +84,18 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or (#id == principal.id and hasRole('AGENTE'))")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AGENTE')")
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody User user) {
         Optional<User> userOptional = service.findbyId(id);
         if (userOptional.isPresent()) {
             User userBD = userOptional.get();
+
+            if (hasRole("AGENTE") && !esCliente(userBD)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Collections.singletonMap("error", "Solo se pueden editar usuarios con rol CLIENTE"));
+            }
+
             userBD.setEmail(user.getEmail());
             userBD.setNombre(user.getNombre());
 
@@ -91,16 +110,36 @@ public class UserController {
                 .body(Collections.singletonMap("error", "No se pudo actualizar, usuario no encontrado con id: " + id));
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('AGENTE')")
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         Optional<User> userOptional = service.findbyId(id);
         if (userOptional.isPresent()) {
+            User userBD = userOptional.get();
+
+            if (hasRole("AGENTE") && !esCliente(userBD)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Collections.singletonMap("error", "Solo se pueden eliminar usuarios con rol CLIENTE"));
+            }
+
             service.deletebyId(id);
             return ResponseEntity.noContent().build();
         }
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Collections.singletonMap("error", "No se pudo eliminar, usuario no encontrado con id: " + id));
+    }
+
+    // 🔒 Helpers
+
+    private boolean esCliente(User user) {
+        return user.getRoles().stream()
+                .anyMatch(r -> r.getNombre().equals("ROLE_CLIENTE"));
+    }
+
+    private boolean hasRole(String roleName) {
+        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .anyMatch(r -> r.equals("ROLE_" + roleName));
     }
 }
