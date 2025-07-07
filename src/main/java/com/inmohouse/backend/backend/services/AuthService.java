@@ -2,7 +2,7 @@ package com.inmohouse.backend.backend.services;
 
 import java.util.Optional;
 
-import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.inmohouse.backend.backend.dto.LoginRequest;
@@ -16,14 +16,15 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
+    private final PasswordEncoder passwordEncoder;
 
-    public AuthService(UserRepository userRepository, JwtUtil jwtUtil) {
+    public AuthService(UserRepository userRepository, JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public LoginResponse login(LoginRequest request) throws Exception {
-
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
         if (userOpt.isEmpty()) {
             System.out.println("⚠ Usuario NO encontrado");
@@ -31,12 +32,17 @@ public class AuthService {
         }
 
         User user = userOpt.get();
-        if (!BCrypt.checkpw(request.getPassword(), user.getPassword())) {
+
+        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), user.getPassword());
+        System.out.println("🔐 Comparando contraseñas: " + passwordMatches);
+
+        if (!passwordMatches) {
             throw new Exception("Contraseña incorrecta");
         }
 
         String token = jwtUtil.generateToken(user);
+        System.out.println("✅ Token generado para: " + user.getEmail());
+
         return new LoginResponse(token);
     }
-
 }
