@@ -29,7 +29,7 @@ public class SecurityConfig {
 
     @Autowired
     private UserRepository userRepository;
-    
+
     private final JwtUtil jwtUtil;
 
     public SecurityConfig(JwtUtil jwtUtil) {
@@ -71,7 +71,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        config.setAllowedOrigins(List.of(
+            "http://localhost:4200",
+            "https://front-users-inmohouse.vercel.app"
+        ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
