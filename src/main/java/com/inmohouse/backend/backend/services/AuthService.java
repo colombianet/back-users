@@ -27,7 +27,7 @@ public class AuthService {
     public LoginResponse login(LoginRequest request) throws Exception {
         Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
         if (userOpt.isEmpty()) {
-            System.out.println("⚠ Usuario NO encontrado");
+            System.out.println("⚠ Usuario NO encontrado.");
             throw new Exception("Usuario no encontrado");
         }
 
