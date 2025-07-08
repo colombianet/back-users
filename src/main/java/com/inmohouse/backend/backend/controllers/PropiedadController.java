@@ -29,7 +29,7 @@ public class PropiedadController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_AGENTE')")
     @PostMapping
     public ResponseEntity<Propiedad> create(@RequestBody PropiedadRequest request,
-                                            Authentication authentication) {
+            Authentication authentication) {
         User agente;
 
         if (authentication != null) {
@@ -87,5 +87,16 @@ public class PropiedadController {
             return item;
         }).collect(Collectors.toList());
         return ResponseEntity.ok(response);
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        repository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }
