@@ -39,7 +39,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             if (jwtUtil.isTokenValid(token)) {
                 String email = jwtUtil.extractUsername(token);
 
-                // ✅ Cargar usuario con roles desde la base de datos
+                // ✅ Cargar usuario con roles desde la base de datos.
                 User user = userRepository.findByEmailWithRoles(email).orElse(null);
 
                 if (user != null) {
