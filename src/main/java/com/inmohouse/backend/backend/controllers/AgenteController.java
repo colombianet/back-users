@@ -25,7 +25,7 @@ public class AgenteController {
     @Autowired
     private UserService userService;
 
-    // 🔍 Ver propiedades asociadas al agente actual
+    // 🔍 Ver propiedades asociadas al agente actual.
     @GetMapping("/mis-propiedades")
     public ResponseEntity<List<Propiedad>> verMisPropiedades(Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
