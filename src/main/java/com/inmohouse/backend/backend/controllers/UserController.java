@@ -71,18 +71,7 @@ public class UserController {
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        List<Role> rolesEntrantes = user.getRoles();
-        List<Role> rolesPersistidos = rolesEntrantes.stream()
-                .map(r -> {
-                    String nombreNormalizado = r.getNombre().startsWith("ROLE_")
-                            ? r.getNombre()
-                            : "ROLE_" + r.getNombre();
-
-                    return roleRepository.findByNombre(nombreNormalizado)
-                            .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + nombreNormalizado));
-                })
-                .collect(Collectors.toList());
-
+        List<Role> rolesPersistidos = normalizarYValidarRoles(user.getRoles());
         user.setRoles(rolesPersistidos);
 
         User nuevo = service.save(user);
@@ -92,8 +81,6 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('AGENTE')")
     @PutMapping("/{id}")
     public ResponseEntity<?> update(@PathVariable Long id, @RequestBody User user) {
-        System.out.println("Password recibida: '" + user.getPassword() + "'");
-
         if (!tieneRoles(user)) {
             return ResponseEntity.badRequest()
                     .body(Collections.singletonMap("error", "El usuario debe tener al menos un rol asignado."));
@@ -111,24 +98,11 @@ public class UserController {
             userBD.setEmail(user.getEmail());
             userBD.setNombre(user.getNombre());
 
-            // ✅ Solo actualiza la contraseña si viene con contenido real
             if (user.getPassword() != null && !user.getPassword().trim().isEmpty()) {
                 userBD.setPassword(passwordEncoder.encode(user.getPassword()));
             }
 
-            // ✅ Actualiza los roles
-            List<Role> rolesEntrantes = user.getRoles();
-            List<Role> rolesPersistidos = rolesEntrantes.stream()
-                    .map(r -> {
-                        String nombreNormalizado = r.getNombre().startsWith("ROLE_")
-                                ? r.getNombre()
-                                : "ROLE_" + r.getNombre();
-
-                        return roleRepository.findByNombre(nombreNormalizado)
-                                .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + nombreNormalizado));
-                    })
-                    .collect(Collectors.toList());
-
+            List<Role> rolesPersistidos = normalizarYValidarRoles(user.getRoles());
             userBD.setRoles(rolesPersistidos);
 
             return ResponseEntity.ok(service.save(userBD));
@@ -173,5 +147,18 @@ public class UserController {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(r -> r.equals("ROLE_" + roleName));
+    }
+
+    private List<Role> normalizarYValidarRoles(List<Role> rolesEntrantes) {
+        return rolesEntrantes.stream()
+                .map(r -> {
+                    String nombreNormalizado = r.getNombre().startsWith("ROLE_")
+                            ? r.getNombre()
+                            : "ROLE_" + r.getNombre();
+
+                    return roleRepository.findByNombre(nombreNormalizado)
+                            .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + nombreNormalizado));
+                })
+                .collect(Collectors.toList());
     }
 }

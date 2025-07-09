@@ -29,7 +29,7 @@ public class PropiedadController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_AGENTE')")
     @PostMapping
     public ResponseEntity<Propiedad> create(@RequestBody PropiedadRequest request,
-            Authentication authentication) {
+                                            Authentication authentication) {
         User agente;
 
         if (authentication != null) {
@@ -61,6 +61,33 @@ public class PropiedadController {
         return ResponseEntity.ok(repository.findAll());
     }
 
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (!repository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        repository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_AGENTE')")
+    public ResponseEntity<Propiedad> update(@PathVariable Long id, @RequestBody Propiedad propiedadActualizada) {
+        return repository.findById(id)
+                .map(propiedadExistente -> {
+                    propiedadExistente.setTitulo(propiedadActualizada.getTitulo());
+                    propiedadExistente.setDescripcion(propiedadActualizada.getDescripcion());
+                    propiedadExistente.setTipo(propiedadActualizada.getTipo());
+                    propiedadExistente.setEstado(propiedadActualizada.getEstado());
+                    propiedadExistente.setUbicacion(propiedadActualizada.getUbicacion());
+                    propiedadExistente.setPrecio(propiedadActualizada.getPrecio());
+                    return ResponseEntity.ok(repository.save(propiedadExistente));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // Estadísticas por tipo
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/estadisticas/tipo")
@@ -87,16 +114,5 @@ public class PropiedadController {
             return item;
         }).collect(Collectors.toList());
         return ResponseEntity.ok(response);
-    }
-
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        if (!repository.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-
-        repository.deleteById(id);
-        return ResponseEntity.noContent().build();
     }
 }
