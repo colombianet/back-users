@@ -48,4 +48,10 @@ public class UserServiceImpl implements UserService {
         return repository.findAllClientes();
     }
 
+    // Búsqueda de usuarios pertenecientes a un agente
+    @Override
+    @Transactional(readOnly = true)
+    public List<User> findClientesPorAgenteId(Long agenteId) {
+        return repository.findClientesPorAgenteId(agenteId);
+    }
 }

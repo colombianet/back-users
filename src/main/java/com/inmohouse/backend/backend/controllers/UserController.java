@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -59,26 +60,24 @@ public class UserController {
 
     @PreAuthorize("hasAnyRole('ADMIN', 'AGENTE')")
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody UserRequest request) {
+    public ResponseEntity<?> create(@RequestBody UserRequest request, Authentication authentication) {
         if (request.getRoles() == null || request.getRoles().isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(Collections.singletonMap("error", "El usuario debe tener al menos un rol asignado."));
         }
 
-        // List<Role> roles = request.getRoles().stream()
-        //         .map(nombre -> roleRepository.findByNombre(nombre)
-        //                 .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + nombre)))
-        //         .collect(Collectors.toList());
         List<Role> roles = request.getRoles().stream()
-    .map(nombre -> {
-        Role role = roleRepository.findByNombre(nombre)
-            .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + nombre));
-        System.out.println("🧩 Rol encontrado: " + role.getNombre() + " con ID: " + role.getId());
-        return role;
-    })
-    .collect(Collectors.toList());
+                .map(nombre -> {
+                    Role role = roleRepository.findByNombre(nombre)
+                            .orElseThrow(() -> new RuntimeException("Rol no encontrado: " + nombre));
+                    System.out.println("🧩 Rol encontrado: " + role.getNombre() + " con ID: " + role.getId());
+                    return role;
+                })
+                .collect(Collectors.toList());
 
-        if (hasRole("AGENTE") && !contieneSoloCliente(roles)) {
+        boolean isAgente = hasRole("AGENTE");
+
+        if (isAgente && !contieneSoloCliente(roles)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Collections.singletonMap("error", "Solo se pueden crear usuarios con rol CLIENTE"));
         }
@@ -87,7 +86,13 @@ public class UserController {
         user.setNombre(request.getNombre());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRoles(roles); // ✅ Aquí sí se usan entidades Role con ID
+        user.setRoles(roles);
+
+        // 👇 Vinculación automática si quien crea es un AGENTE
+        if (isAgente && authentication != null) {
+            User agente = service.findbyId(getUserId(authentication)).orElseThrow();
+            user.setAgente(agente);
+        }
 
         User nuevo = service.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(nuevo);
@@ -166,5 +171,9 @@ public class UserController {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .anyMatch(r -> r.equals("ROLE_" + roleName));
+    }
+
+    private Long getUserId(Authentication authentication) {
+        return ((com.inmohouse.backend.backend.security.CustomUserDetails) authentication.getPrincipal()).getId();
     }
 }

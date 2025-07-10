@@ -18,4 +18,8 @@ public interface UserRepository extends CrudRepository<User, Long> {
     // Búsqueda de usuarios cliente por token de agente
     @Query("SELECT u FROM User u JOIN u.roles r WHERE r.nombre = 'ROLE_CLIENTE'")
     List<User> findAllClientes();
+
+    // Búsqueda de usuarios pertenecientes a un agente
+    @Query("SELECT u FROM User u JOIN u.roles r WHERE r.nombre = 'ROLE_CLIENTE' AND u.agente.id = :agenteId")
+    List<User> findClientesPorAgenteId(@Param("agenteId") Long agenteId);
 }

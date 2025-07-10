@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -35,6 +36,10 @@ public class User {
         inverseJoinColumns = @JoinColumn(name = "rol_id")
     )
     private List<Role> roles;
+
+    @ManyToOne
+    @JoinColumn(name = "agente_id")
+    private User agente;
 
     public User() {
         this.roles = new ArrayList<>();
@@ -78,5 +83,13 @@ public class User {
 
     public void setRoles(List<Role> roles) {
         this.roles = roles;
+    }
+
+    public User getAgente() {
+        return agente;
+    }
+
+    public void setAgente(User agente) {
+        this.agente = agente;
     }
 }

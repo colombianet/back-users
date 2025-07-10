@@ -15,4 +15,6 @@ public interface UserService {
     void deletebyId(Long id);
 
     List<User> findAllClientes();
+
+    List<User> findClientesPorAgenteId(Long agenteId);
 }
