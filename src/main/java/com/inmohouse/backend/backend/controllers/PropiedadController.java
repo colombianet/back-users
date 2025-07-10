@@ -102,11 +102,25 @@ public class PropiedadController {
         return ResponseEntity.ok(response);
     }
 
-    // Estadísticas por agente
+    // Estadísticas por agente con propiedades asignadas
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/estadisticas/agente")
     public ResponseEntity<List<Map<String, Object>>> estadisticasPorAgente() {
         List<Object[]> resultados = repository.contarPorAgente();
+        List<Map<String, Object>> response = resultados.stream().map(row -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("agente", row[0]);
+            item.put("cantidad", row[1]);
+            return item;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    // Estadísticas por agente con o sin propiedades asignadas
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/estadisticas/agente-completo")
+    public ResponseEntity<List<Map<String, Object>>> estadisticasPorAgenteCompleto() {
+        List<Object[]> resultados = repository.contarPorAgenteIncluyendoSinPropiedades();
         List<Map<String, Object>> response = resultados.stream().map(row -> {
             Map<String, Object> item = new HashMap<>();
             item.put("agente", row[0]);
