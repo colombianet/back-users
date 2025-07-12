@@ -6,7 +6,6 @@ import com.inmohouse.backend.backend.entities.User;
 import com.inmohouse.backend.backend.repositories.PropiedadRepository;
 import com.inmohouse.backend.backend.repositories.UserRepository;
 import com.inmohouse.backend.backend.security.CustomUserDetails;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,23 +25,11 @@ public class PropiedadController {
     @Autowired
     private UserRepository userRepository;
 
-    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_AGENTE')")
+    // 🏠 Crear propiedad (solo ADMIN), con opción de asignar agente si estado es
+    // DISPONIBLE
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @PostMapping
-    public ResponseEntity<Propiedad> create(@RequestBody PropiedadRequest request,
-                                            Authentication authentication) {
-        User agente;
-
-        if (authentication != null) {
-            CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-            agente = userRepository.findById(userDetails.getId()).orElse(null);
-        } else {
-            agente = userRepository.findById(request.getAgenteId()).orElse(null);
-        }
-
-        if (agente == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
-
+    public ResponseEntity<Propiedad> create(@RequestBody PropiedadRequest request) {
         Propiedad propiedad = new Propiedad(
                 request.getTitulo(),
                 request.getDescripcion(),
@@ -50,7 +37,15 @@ public class PropiedadController {
                 request.getPrecio(),
                 request.getUbicacion(),
                 request.getEstado(),
-                agente);
+                null // agente se evalúa abajo
+        );
+
+        if ("DISPONIBLE".equalsIgnoreCase(request.getEstado()) && request.getAgenteId() != null) {
+            User agente = userRepository.findById(request.getAgenteId()).orElse(null);
+            if (agente != null) {
+                propiedad.setAgente(agente);
+            }
+        }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(repository.save(propiedad));
     }
@@ -67,11 +62,11 @@ public class PropiedadController {
         if (!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
-
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
+    // ✏️ Actualizar propiedad, desasignar agente si estado ≠ DISPONIBLE
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_AGENTE')")
     public ResponseEntity<Propiedad> update(@PathVariable Long id, @RequestBody Propiedad propiedadActualizada) {
@@ -83,12 +78,18 @@ public class PropiedadController {
                     propiedadExistente.setEstado(propiedadActualizada.getEstado());
                     propiedadExistente.setUbicacion(propiedadActualizada.getUbicacion());
                     propiedadExistente.setPrecio(propiedadActualizada.getPrecio());
+
+                    // 🚫 Desasignar agente si estado ≠ DISPONIBLE
+                    if (!"DISPONIBLE".equalsIgnoreCase(propiedadActualizada.getEstado())) {
+                        propiedadExistente.setAgente(null);
+                    }
+
                     return ResponseEntity.ok(repository.save(propiedadExistente));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Estadísticas por tipo
+    // 📊 Estadísticas por tipo
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/estadisticas/tipo")
     public ResponseEntity<List<Map<String, Object>>> estadisticasPorTipo() {
@@ -102,7 +103,7 @@ public class PropiedadController {
         return ResponseEntity.ok(response);
     }
 
-    // Estadísticas por agente con propiedades asignadas
+    // 📊 Estadísticas por agente con propiedades asignadas
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/estadisticas/agente")
     public ResponseEntity<List<Map<String, Object>>> estadisticasPorAgente() {
@@ -116,7 +117,7 @@ public class PropiedadController {
         return ResponseEntity.ok(response);
     }
 
-    // Estadísticas por agente con o sin propiedades asignadas
+    // 📊 Estadísticas por agente con y sin propiedades asignadas
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/estadisticas/agente-completo")
     public ResponseEntity<List<Map<String, Object>>> estadisticasPorAgenteCompleto() {
@@ -127,6 +128,67 @@ public class PropiedadController {
             item.put("cantidad", row[1]);
             return item;
         }).collect(Collectors.toList());
+        return ResponseEntity.ok(response);
+    }
+
+    // 🎯 Asignar agente solo si propiedad está DISPONIBLE
+    @PutMapping("/{id}/asignar-agente")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<?> asignarAgente(@PathVariable Long id, @RequestBody Map<String, Long> payload) {
+        Long nuevoAgenteId = payload.get("agenteId");
+
+        Optional<Propiedad> propiedadOpt = repository.findByIdWithAgente(id);
+        Optional<User> agenteOpt = userRepository.findByIdWithRoles(nuevoAgenteId);
+
+        if (propiedadOpt.isEmpty() || agenteOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Propiedad o agente no encontrado"));
+        }
+
+        Propiedad propiedad = propiedadOpt.get();
+
+        if (!"DISPONIBLE".equalsIgnoreCase(propiedad.getEstado())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Solo se pueden asignar agentes a propiedades disponibles"));
+        }
+
+        propiedad.setAgente(agenteOpt.get());
+        repository.save(propiedad);
+        return ResponseEntity.ok(Map.of("mensaje", "Agente asignado correctamente"));
+    }
+
+    // 🚫 Desasignar agente manualmente
+    @PutMapping("/{id}/desasignar-agente")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<?> desasignarAgente(@PathVariable Long id) {
+        Optional<Propiedad> propiedadOpt = repository.findById(id);
+        if (propiedadOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Propiedad no encontrada"));
+        }
+        Propiedad propiedad = propiedadOpt.get();
+        propiedad.setAgente(null);
+        repository.save(propiedad);
+        return ResponseEntity.ok(Map.of("mensaje", "Agente desasignado correctamente"));
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @GetMapping("/debug/{id}")
+    public ResponseEntity<?> debugPropiedad(@PathVariable Long id) {
+        Optional<Propiedad> propiedadOpt = repository.findByIdWithAgente(id);
+        if (propiedadOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "No se encontró la propiedad con id " + id));
+        }
+
+        Propiedad p = propiedadOpt.get();
+        String nombreAgente = (p.getAgente() != null) ? p.getAgente().getNombre() : null;
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("id", p.getId());
+        response.put("estado", p.getEstado());
+        response.put("titulo", p.getTitulo());
+        response.put("agente", nombreAgente);
+
         return ResponseEntity.ok(response);
     }
 }

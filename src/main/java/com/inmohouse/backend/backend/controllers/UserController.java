@@ -91,7 +91,7 @@ public class UserController {
         // 👇 Vinculación automática si quien crea es un AGENTE
         if (isAgente && authentication != null) {
             User agente = service.findbyId(getUserId(authentication)).orElseThrow();
-            user.setAgente(agente);
+            // user.setAgente(agente);
         }
 
         User nuevo = service.save(user);

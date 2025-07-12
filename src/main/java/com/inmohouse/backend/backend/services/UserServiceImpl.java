@@ -12,7 +12,7 @@ import com.inmohouse.backend.backend.repositories.UserRepository;
 @Service
 public class UserServiceImpl implements UserService {
 
-    private UserRepository repository;
+    private final UserRepository repository;
 
     public UserServiceImpl(UserRepository repository) {
         this.repository = repository;
@@ -21,37 +21,30 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<User> findAll() {
-        return (List) this.repository.findAll();
+        return (List<User>) repository.findAll();
     }
 
     @Override
     @Transactional(readOnly = true)
     public Optional<User> findbyId(Long id) {
-        return this.repository.findById(id);
+        return repository.findById(id);
     }
 
     @Override
     @Transactional
     public User save(User user) {
-        return this.repository.save(user);
+        return repository.save(user);
     }
 
     @Override
     @Transactional
     public void deletebyId(Long id) {
-        this.repository.deleteById(id);
+        repository.deleteById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<User> findAllClientes() {
         return repository.findAllClientes();
-    }
-
-    // Búsqueda de usuarios pertenecientes a un agente
-    @Override
-    @Transactional(readOnly = true)
-    public List<User> findClientesPorAgenteId(Long agenteId) {
-        return repository.findClientesPorAgenteId(agenteId);
     }
 }

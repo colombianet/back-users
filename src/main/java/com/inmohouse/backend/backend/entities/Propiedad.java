@@ -18,7 +18,7 @@ public class Propiedad {
     private String ubicacion;
     private String estado;
 
-    @ManyToOne
+    @ManyToOne(optional = true)
     @JoinColumn(name = "agente_id")
     private User agente;
 

@@ -48,9 +48,6 @@ public class AgenteController {
     // Búsqueda de usuarios pertenecientes a un agente
     @GetMapping("/mis-clientes")
     public ResponseEntity<List<User>> verMisClientes(Authentication authentication) {
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-        Long agenteId = userDetails.getId();
-        List<User> clientes = userService.findClientesPorAgenteId(agenteId);
-        return ResponseEntity.ok(clientes);
+        return ResponseEntity.ok(List.of()); // sin lógica de agente por ahora
     }
 }
