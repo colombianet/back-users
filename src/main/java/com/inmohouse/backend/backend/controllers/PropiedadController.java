@@ -159,16 +159,26 @@ public class PropiedadController {
 
     // 🚫 Desasignar agente manualmente
     @PutMapping("/{id}/desasignar-agente")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> desasignarAgente(@PathVariable Long id) {
-        Optional<Propiedad> propiedadOpt = repository.findById(id);
-        if (propiedadOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "Propiedad no encontrada"));
+        Optional<Propiedad> optionalPropiedad = repository.findById(id);
+
+        if (optionalPropiedad.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Propiedad no encontrada");
         }
-        Propiedad propiedad = propiedadOpt.get();
+
+        Propiedad propiedad = optionalPropiedad.get();
+
+        if (propiedad.getAgente() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("La propiedad ya no tiene agente asignado");
+        }
+
         propiedad.setAgente(null);
         repository.save(propiedad);
-        return ResponseEntity.ok(Map.of("mensaje", "Agente desasignado correctamente"));
+
+        return ResponseEntity.ok().build();
     }
 
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
