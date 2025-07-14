@@ -93,13 +93,22 @@ public class PropiedadController {
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @GetMapping("/estadisticas/tipo")
     public ResponseEntity<List<Map<String, Object>>> estadisticasPorTipo() {
-        List<Object[]> resultados = repository.contarPorTipo();
-        List<Map<String, Object>> response = resultados.stream().map(row -> {
+        List<String> tiposEsperados = List.of("Apartamento", "Casa", "Local");
+
+        List<Object[]> resultados = repository.contarPorTipo(); // tipo, cantidad
+
+        Map<String, Long> conteoActual = resultados.stream()
+                .collect(Collectors.toMap(
+                        r -> (String) r[0],
+                        r -> ((Number) r[1]).longValue()));
+
+        List<Map<String, Object>> response = tiposEsperados.stream().map(tipo -> {
             Map<String, Object> item = new HashMap<>();
-            item.put("tipo", row[0]);
-            item.put("cantidad", row[1]);
+            item.put("tipo", tipo);
+            item.put("cantidad", conteoActual.getOrDefault(tipo, 0L));
             return item;
         }).collect(Collectors.toList());
+
         return ResponseEntity.ok(response);
     }
 
